@@ -782,6 +782,143 @@ h1, h2, h3, h4, h5, h6 {
 /* ===== TOAST in dark mode ===== */
 [data-theme="dark"] [data-radix-toast-viewport] { filter: brightness(0.95); }
 
+/* ===== NIGHT SCREEN ===== */
+@keyframes nightStarBlink {
+  0%,100% { opacity: 0.15; transform: scale(0.8); }
+  50%      { opacity: 1;    transform: scale(1.3); }
+}
+@keyframes nightMoonFloat {
+  0%,100% { transform: translateY(0px) rotate(-5deg); }
+  50%      { transform: translateY(-12px) rotate(5deg); }
+}
+@keyframes nightZFloat {
+  0%      { opacity: 0; transform: translateY(0px) scale(0.7); }
+  20%,70% { opacity: 1; }
+  100%    { opacity: 0; transform: translateY(-38px) scale(1.1); }
+}
+@keyframes nightSpotSway {
+  0%,100% { transform: translateY(0px); }
+  50%      { transform: translateY(-5px); }
+}
+@keyframes nightSpotZFloat {
+  0%      { opacity: 0; transform: translateY(0px) translateX(0px) scale(0.6); }
+  30%,65% { opacity: 0.85; }
+  100%    { opacity: 0; transform: translateY(-22px) translateX(4px) scale(1); }
+}
+
+.night-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 32px 20px 48px;
+  position: relative;
+  overflow: hidden;
+  border-radius: 20px;
+  border: 1px solid hsl(var(--border));
+  background: linear-gradient(
+    160deg,
+    hsl(230 30% 10%) 0%,
+    hsl(250 28% 8%) 60%,
+    hsl(220 35% 7%) 100%
+  );
+  min-height: 360px;
+}
+[data-theme="light"] .night-screen {
+  background: linear-gradient(
+    160deg,
+    hsl(230 30% 18%) 0%,
+    hsl(250 28% 14%) 60%,
+    hsl(220 35% 12%) 100%
+  );
+}
+
+/* Starfield */
+.night-stars {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.night-star {
+  position: absolute;
+  background: white;
+  border-radius: 50%;
+  animation: nightStarBlink 2.5s ease-in-out infinite;
+}
+
+/* Moon */
+.night-moon {
+  position: relative;
+  z-index: 1;
+  animation: nightMoonFloat 5s ease-in-out infinite;
+  filter: drop-shadow(0 0 22px rgba(253,230,138,0.45));
+  margin-bottom: 4px;
+}
+
+/* ZZZ */
+.night-zzz {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  margin-bottom: 10px;
+  height: 40px;
+}
+.night-z {
+  font-family: var(--font-display);
+  font-weight: 900;
+  color: rgba(253,230,138,0.7);
+  line-height: 1;
+  animation: nightZFloat 2.8s ease-in-out infinite;
+}
+.night-z-1 { font-size: 16px; animation-delay: 0.0s; }
+.night-z-2 { font-size: 22px; animation-delay: 0.7s; }
+.night-z-3 { font-size: 30px; animation-delay: 1.4s; }
+
+/* Sleeping spot row */
+.night-spots {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+  justify-content: center;
+  margin-bottom: 24px;
+  position: relative;
+  z-index: 1;
+}
+.night-spot-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: nightSpotSway 3.5s ease-in-out infinite;
+}
+.night-spot-emoji {
+  font-size: 26px;
+  filter: brightness(0.55) saturate(0.5);
+  display: block;
+}
+.night-spot-zzz {
+  position: absolute;
+  top: -10px;
+  right: -4px;
+  font-size: 11px;
+  font-weight: 900;
+  color: rgba(253,230,138,0.6);
+  font-family: var(--font-display);
+  animation: nightSpotZFloat 2.4s ease-in-out infinite;
+}
+
+/* Text block */
+.night-text {
+  position: relative;
+  z-index: 1;
+  color: hsl(var(--foreground));
+}
+
+/* ===== END NIGHT SCREEN ===== */
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

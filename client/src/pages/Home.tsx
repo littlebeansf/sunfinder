@@ -127,6 +127,106 @@ function MapFitBounds({ spots, userLat, userLon }: { spots: SunnySpot[]; userLat
   return null;
 }
 
+// ===== NIGHT SCREEN =====
+function NightScreen({ nextSunrise, locationName }: { nextSunrise: number | null; locationName: string }) {
+  const [timeLeft, setTimeLeft] = useState("");
+
+  useEffect(() => {
+    if (!nextSunrise) return;
+    const update = () => {
+      const diff = nextSunrise - Date.now();
+      if (diff <= 0) { setTimeLeft("Any moment now ☀️"); return; }
+      const h = Math.floor(diff / 3_600_000);
+      const m = Math.floor((diff % 3_600_000) / 60_000);
+      setTimeLeft(`${h}h ${m}m`);
+    };
+    update();
+    const id = setInterval(update, 30_000);
+    return () => clearInterval(id);
+  }, [nextSunrise]);
+
+  const sunriseStr = nextSunrise
+    ? new Date(nextSunrise).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    : null;
+
+  return (
+    <div className="night-screen animate-fade-in">
+      {/* Starfield */}
+      <div className="night-stars" aria-hidden="true">
+        {Array.from({ length: 28 }).map((_, i) => (
+          <div
+            key={i}
+            className="night-star"
+            style={{
+              top: `${Math.random() * 72}%`,
+              left: `${Math.random() * 100}%`,
+              animationDelay: `${(i * 0.37) % 3.5}s`,
+              animationDuration: `${2.2 + (i % 5) * 0.4}s`,
+              width: i % 4 === 0 ? "3px" : "2px",
+              height: i % 4 === 0 ? "3px" : "2px",
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Moon */}
+      <div className="night-moon" aria-hidden="true">
+        <svg viewBox="0 0 120 120" width="120" height="120" fill="none">
+          {/* Outer glow */}
+          <circle cx="60" cy="60" r="56" fill="rgba(253,230,138,0.07)" />
+          <circle cx="60" cy="60" r="44" fill="rgba(253,230,138,0.10)" />
+          {/* Moon crescent */}
+          <path
+            d="M72 22 C42 28 28 58 40 86 C18 74 14 40 36 20 C46 11 62 13 72 22Z"
+            fill="#fde68a"
+          />
+          <path d="M72 22 C50 34 46 60 56 82 C36 68 38 38 52 24Z" fill="#fbbf24" opacity="0.4" />
+          {/* Craters */}
+          <circle cx="44" cy="52" r="5" fill="rgba(251,191,36,0.22)" />
+          <circle cx="52" cy="70" r="3" fill="rgba(251,191,36,0.18)" />
+          <circle cx="38" cy="68" r="2" fill="rgba(251,191,36,0.15)" />
+        </svg>
+      </div>
+
+      {/* Sleepy ZZZ characters */}
+      <div className="night-zzz" aria-hidden="true">
+        <span className="night-z night-z-1">z</span>
+        <span className="night-z night-z-2">z</span>
+        <span className="night-z night-z-3">Z</span>
+      </div>
+
+      {/* Sleeping spots row */}
+      <div className="night-spots" aria-hidden="true">
+        {["🏔️","🌲","🏖️","🌾","🏙️"].map((emoji, i) => (
+          <div key={i} className="night-spot-item" style={{ animationDelay: `${i * 0.18}s` }}>
+            <span className="night-spot-emoji">{emoji}</span>
+            <div className="night-spot-zzz" style={{ animationDelay: `${i * 0.22}s` }}>z</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Text */}
+      <div className="night-text">
+        <h2 className="font-display font-black text-2xl mb-2">
+          The sun has gone to sleep 🌙
+        </h2>
+        <p className="text-muted-foreground text-sm max-w-xs mx-auto leading-relaxed mb-1">
+          It's night-time in <strong>{locationName}</strong>. All the sunny spots are snoozing too.
+        </p>
+        {sunriseStr && (
+          <p className="text-sm font-semibold mt-3">
+            ☀️ Next sunrise at <span style={{ color: "#f59e0b" }}>{sunriseStr}</span>
+            {timeLeft ? <span className="text-muted-foreground font-normal text-xs ml-2">(in {timeLeft})</span> : null}
+          </p>
+        )}
+        <p className="text-xs text-muted-foreground mt-4 opacity-60">
+          Come back then and we'll find you the best sunny spots.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 // ===== LOADING SPLASH =====
 function SplashScreen({ visible }: { visible: boolean }) {
   const [mounted, setMounted] = useState(true);
@@ -845,11 +945,20 @@ export default function Home() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // Fetch sunny spots
+  // Current weather (also drives night detection + sunrise time)
+  const { data: currentWeather } = useQuery({
+    queryKey: ["/api/weather/current", coords?.lat, coords?.lon],
+    queryFn: () => fetchCurrentWeather(coords!.lat, coords!.lon),
+    enabled: !!coords,
+    staleTime: 5 * 60 * 1000,
+  });
+  const isNightMode = currentWeather?.isNight === true;
+
+  // Fetch sunny spots — disabled when it's night (no point scanning the dark)
   const { data: spots, isLoading: spotsLoading, refetch: refetchSpots } = useQuery<SunnySpot[]>({
     queryKey: ["/api/weather/sunny-spots", coords?.lat, coords?.lon, radiusKm],
     queryFn: () => fetchSunnySpots(coords!.lat, coords!.lon, radiusKm) as Promise<SunnySpot[]>,
-    enabled: !!coords,
+    enabled: !!coords && !isNightMode,
     staleTime: 5 * 60 * 1000,
   });
 
@@ -1210,47 +1319,54 @@ export default function Home() {
                   )}
                 </div>
 
-                {/* Spots section */}
-                <div>
-                  <div className="flex items-center justify-between mb-2 px-0.5">
-                    <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
-                      <Sun className="w-3 h-3" /> Nearby Sunny Spots
-                    </p>
-                    {spots && <Badge variant="secondary" className="text-xs font-bold px-2 py-0">{spots.length}</Badge>}
-                  </div>
+                {/* ===== SPOTS or NIGHT SCREEN ===== */}
+                {isNightMode ? (
+                  <NightScreen
+                    nextSunrise={currentWeather?.nextSunrise ?? null}
+                    locationName={currentWeather?.name || "your location"}
+                  />
+                ) : (
+                  <div>
+                    <div className="flex items-center justify-between mb-2 px-0.5">
+                      <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
+                        <Sun className="w-3 h-3" /> Nearby Sunny Spots
+                      </p>
+                      {spots && <Badge variant="secondary" className="text-xs font-bold px-2 py-0">{spots.length}</Badge>}
+                    </div>
 
-                  {spotsLoading && (
-                    <div className="space-y-2.5">
-                      {[...Array(5)].map((_, i) => (
-                        <div key={i} className="rounded-xl border bg-card p-3.5 space-y-2">
-                          <div className="flex gap-3">
-                            <Skeleton className="w-9 h-9 rounded-xl shrink-0" />
-                            <div className="flex-1 space-y-1.5">
-                              <Skeleton className="h-3.5 w-3/4" />
-                              <Skeleton className="h-3 w-1/2" />
-                              <Skeleton className="h-3 w-full" />
+                    {spotsLoading && (
+                      <div className="space-y-2.5">
+                        {[...Array(5)].map((_, i) => (
+                          <div key={i} className="rounded-xl border bg-card p-3.5 space-y-2">
+                            <div className="flex gap-3">
+                              <Skeleton className="w-9 h-9 rounded-xl shrink-0" />
+                              <div className="flex-1 space-y-1.5">
+                                <Skeleton className="h-3.5 w-3/4" />
+                                <Skeleton className="h-3 w-1/2" />
+                                <Skeleton className="h-3 w-full" />
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                        ))}
+                      </div>
+                    )}
 
-                  {spots && spots.length > 0 && (
-                    <div className="space-y-2">
-                      {spots.map((spot, i) => (
-                        <SpotCard
-                          key={`${spot.lat}-${spot.lon}`}
-                          spot={spot}
-                          index={i}
-                          isActive={activeSpotIndex === i}
-                          onClick={() => handleSpotCardClick(i, spot)}
-                          animDelay={i * 55}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
+                    {spots && spots.length > 0 && (
+                      <div className="space-y-2">
+                        {spots.map((spot, i) => (
+                          <SpotCard
+                            key={`${spot.lat}-${spot.lon}`}
+                            spot={spot}
+                            index={i}
+                            isActive={activeSpotIndex === i}
+                            onClick={() => handleSpotCardClick(i, spot)}
+                            animDelay={i * 55}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </aside>
 
               {/* ===== MAP ===== */}

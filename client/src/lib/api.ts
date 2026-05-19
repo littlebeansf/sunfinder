@@ -71,12 +71,12 @@ export async function reverseGeocode(lat: number, lon: number) {
       const res = await fetch(url);
       const data = await res.json() as any;
       const p = data.features?.[0]?.properties || {};
-      // Pick the most specific useful name available
+      // Pick most specific name — include district/county as final fallback before coords
       const name = p.name || p.city || p.town || p.village ||
-                   p.municipality || p.suburb || p.county ||
-                   (p.state ? p.state : null) || "Unknown";
+                   p.municipality || p.suburb || p.hamlet ||
+                   p.district || p.county || p.state || null;
       return {
-        name,
+        name: name || `${lat.toFixed(2)}°, ${lon.toFixed(2)}°`,
         region: p.state || p.county || "",
         country: (p.countrycode || "").toUpperCase(),
       };
@@ -143,10 +143,14 @@ export async function fetchCurrentWeather(lat: number, lon: number, _radiusKm?: 
     const res = await fetch(`/api/weather/current?lat=${lat}&lon=${lon}`);
     return res.json();
   }
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,cloud_cover,wind_speed_10m,is_day&timezone=auto&forecast_days=1`;
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,cloud_cover,wind_speed_10m,is_day&daily=sunrise,sunset&timezone=auto&forecast_days=2`;
   const weatherRes = await fetch(url);
   const weatherJson = await weatherRes.json() as any;
   const c = weatherJson.current;
+  // Next sunrise: first one still in the future
+  const sunriseArr: string[] = weatherJson.daily?.sunrise || [];
+  const now = Date.now();
+  const nextSunrise = sunriseArr.map((s: string) => new Date(s).getTime()).find((t: number) => t > now) || null;
   const geo = await reverseGeocode(lat, lon);
   const weatherCode = c.weather_code ?? 0;
   const cloudCover = c.cloud_cover ?? 0;
@@ -160,6 +164,7 @@ export async function fetchCurrentWeather(lat: number, lon: number, _radiusKm?: 
     humidity: c.relative_humidity_2m, precipitation,
     sunnyScore: calcSunnyScore(weatherCode, cloudCover, precipitation),
     isNight: c.is_day === 0,
+    nextSunrise,
   };
 }
 

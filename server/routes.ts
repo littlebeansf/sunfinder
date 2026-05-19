@@ -93,35 +93,111 @@ function generateCandidates(lat: number, lon: number, radiusKm = 200) {
 }
 
 async function reverseGeocode(lat: number, lon: number): Promise<{ name: string; region: string; country: string }> {
+  // pickName: only settlement-level names qualify — NO county/state/region.
+  // Omitting those forces the cascade to run the spiral rescue for lake/open-country coords,
+  // which finds the actual nearest town (e.g. "Arbon" instead of "Thurgau").
   const pickName = (address: any): string | null => {
     return address.city || address.town || address.village ||
            address.municipality || address.suburb || address.hamlet ||
-           address.locality || address.county || null;
+           address.locality || address.quarter || address.neighbourhood || null;
   };
+  // Broad area names that should NOT short-circuit the spiral rescue.
+  // Extend this list as needed for other regions.
+  const BROAD_AREA_NAMES = new Set([
+    "Thurgau", "Schaffhausen", "St. Gallen", "Zürich", "Zug", "Aargau",
+    "Graubünden", "Glarus", "Schwyz", "Uri", "Nidwalden", "Obwalden",
+    "Luzern", "Bern", "Solothurn", "Basel", "Appenzell", "Fribourg",
+    "Valais", "Vaud", "Genève", "Neuchâtel", "Jura", "Ticino",
+    "Baden-Württemberg", "Bayern", "Austria", "Vorarlberg", "Tirol",
+    "Switzerland", "Germany", "France", "Italy", "Liechtenstein",
+    "Bodensee", "Lake Constance", "Rhein", "Rhine",
+  ]);
   try {
     // First attempt: zoom=10 (city/town level)
-    const url1 = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=10`;
-    const res1 = await fetch(url1, { headers: { "User-Agent": "SunFinder/1.0" } });
+    const url1 = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=10&accept-language=en`;
+    const res1 = await fetch(url1, { headers: { "User-Agent": "SunFinder/1.0 (weather app)" } });
     const data1 = (await res1.json()) as any;
     const address1 = data1.address || {};
-    const name1 = pickName(address1);
-    const region = address1.state || address1.county || "";
+    const region = address1.state || address1.county || address1.state_district || "";
     const country = address1.country_code?.toUpperCase() || address1.country || "";
-    if (name1) return { name: name1, region, country };
+    const name1 = pickName(address1);
+    if (name1 && name1 !== "Unknown") return { name: name1, region, country };
 
-    // Second attempt: zoom=8 (county / region level)
-    const url2 = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=8`;
-    const res2 = await fetch(url2, { headers: { "User-Agent": "SunFinder/1.0" } });
+    // Rescue: use the first segment of display_name (usually the place name),
+    // but skip it if it resolves to a broad area/canton/country name.
+    if (data1.display_name) {
+      const firstName = data1.display_name.split(",")[0].trim();
+      if (firstName && firstName.length > 0 && !BROAD_AREA_NAMES.has(firstName)) {
+        return { name: firstName, region, country };
+      }
+    }
+
+    // Second attempt: zoom=8 — only accept if it's more specific than a broad area name.
+    // For lake/open-country coords, zoom=8 often returns a canton which we must skip.
+    const url2 = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=8&accept-language=en`;
+    const res2 = await fetch(url2, { headers: { "User-Agent": "SunFinder/1.0 (weather app)" } });
     const data2 = (await res2.json()) as any;
     const address2 = data2.address || {};
-    const name2 = address2.county || address2.state_district || address2.state || null;
+    const name2raw = address2.county || address2.state_district || null; // skip bare state
     const region2 = address2.state || address2.county || "";
     const country2 = address2.country_code?.toUpperCase() || address2.country || "";
-    if (name2) return { name: name2, region: region2, country: country2 };
+    if (name2raw && !BROAD_AREA_NAMES.has(name2raw)) return { name: name2raw, region: region2, country: country2 };
+    if (data2.display_name) {
+      const firstName = data2.display_name.split(",")[0].trim();
+      if (firstName && !BROAD_AREA_NAMES.has(firstName)) return { name: firstName, region: region2, country: country2 };
+    }
 
-    return { name: "Unknown", region: "", country: "" };
+    // Third attempt: zoom=13 (street/suburb level — catches Swiss towns that zoom=10 misses)
+    const url3 = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=13&accept-language=en`;
+    const res3 = await fetch(url3, { headers: { "User-Agent": "SunFinder/1.0 (weather app)" } });
+    const data3 = (await res3.json()) as any;
+    const address3 = data3.address || {};
+    const name3 = pickName(address3);
+    const region3 = address3.state || address3.county || "";
+    const country3 = address3.country_code?.toUpperCase() || address3.country || "";
+    if (name3 && name3 !== "Unknown") return { name: name3, region: region3, country: country3 };
+    if (data3.display_name) {
+      const firstName = data3.display_name.split(",")[0].trim();
+      if (firstName && firstName.length > 1 && !BROAD_AREA_NAMES.has(firstName)) {
+        return { name: firstName, region: region3, country: country3 };
+      }
+    }
+
+    // Final rescue: spiral outward in small steps to find nearest named settlement
+    // Handles coords that land in lakes, seas, or open countryside
+    const offsets = [
+      [0.03, 0], [-0.03, 0], [0, 0.04], [0, -0.04],
+      [0.03, 0.04], [-0.03, 0.04], [0.03, -0.04], [-0.03, -0.04],
+      [0.06, 0], [-0.06, 0], [0, 0.08], [0, -0.08],
+    ];
+    for (const [dLat, dLon] of offsets) {
+      try {
+        const oUrl = `https://nominatim.openstreetmap.org/reverse?lat=${lat+dLat}&lon=${lon+dLon}&format=json&zoom=13&accept-language=en`;
+        const oRes = await fetch(oUrl, { headers: { "User-Agent": "SunFinder/1.0 (weather app)" } });
+        const oData = (await oRes.json()) as any;
+        const oAddr = oData.address || {};
+        const oName = pickName(oAddr);
+        if (oName && oName !== "Unknown") {
+          return {
+            name: oName,
+            region: oAddr.state || oAddr.county || "",
+            country: oAddr.country_code?.toUpperCase() || "",
+          };
+        }
+        // display_name first segment rescue — skip broad area names
+        if (oData.display_name) {
+          const fn = oData.display_name.split(",")[0].trim();
+          if (fn && fn.length > 1 && !BROAD_AREA_NAMES.has(fn)) {
+            return { name: fn, region: oAddr.state || "", country: oAddr.country_code?.toUpperCase() || "" };
+          }
+        }
+      } catch { /* continue */ }
+    }
+
+    // Absolute final fallback: coordinate string
+    return { name: `${lat.toFixed(2)}°, ${lon.toFixed(2)}°`, region: "", country: "" };
   } catch {
-    return { name: "Unknown", region: "", country: "" };
+    return { name: `${lat.toFixed(2)}°, ${lon.toFixed(2)}°`, region: "", country: "" };
   }
 }
 
@@ -155,10 +231,14 @@ export async function registerRoutes(httpServer: Server, app: Express) {
         `https://api.open-meteo.com/v1/forecast?` +
         `latitude=${lat}&longitude=${lon}` +
         `&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,cloud_cover,wind_speed_10m,is_day` +
-        `&timezone=auto&forecast_days=1`;
+        `&daily=sunrise,sunset&timezone=auto&forecast_days=2`;
       const weatherRes = await fetch(url);
       const weatherJson = (await weatherRes.json()) as any;
       const c = weatherJson.current;
+      // Next sunrise: today's if not yet passed, otherwise tomorrow's
+      const sunriseArr: string[] = weatherJson.daily?.sunrise || [];
+      const now = Date.now();
+      const nextSunrise = sunriseArr.map((s: string) => new Date(s).getTime()).find((t: number) => t > now) || null;
 
       const geo = await reverseGeocode(lat, lon);
       const weatherCode = c.weather_code ?? 0;
@@ -181,6 +261,7 @@ export async function registerRoutes(httpServer: Server, app: Express) {
         precipitation,
         sunnyScore: calcSunnyScore(weatherCode, cloudCover, precipitation),
         isNight: c.is_day === 0,
+        nextSunrise,
       });
     } catch (err) {
       res.status(500).json({ error: "Failed to fetch weather" });
