@@ -9,12 +9,13 @@ import "leaflet/dist/leaflet.css";
 import type { SunnySpot, SavedLocation } from "@shared/schema";
 import {
   MapPin, Sun, Cloud, CloudRain, Locate, Search, Bookmark, Trash2,
-  Wind, Droplets, Thermometer, Star, Moon, RefreshCw,
+  Wind, Droplets, Thermometer, Star, Moon, RefreshCw, SlidersHorizontal,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Slider } from "@/components/ui/slider";
 
 // Fix Leaflet default icons
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -337,24 +338,10 @@ function SpotPopup({ spot }: { spot: SunnySpot }) {
 }
 
 // ===== THEME TOGGLE =====
-function ThemeToggle() {
-  const [isDark, setIsDark] = useState(() => {
-    if (typeof window !== "undefined") {
-      const saved = (window as any).__sunfinderTheme;
-      if (saved) return saved === "dark";
-      return window.matchMedia("(prefers-color-scheme: dark)").matches;
-    }
-    return false;
-  });
-
-  useEffect(() => {
-    document.documentElement.setAttribute("data-theme", isDark ? "dark" : "light");
-    (window as any).__sunfinderTheme = isDark ? "dark" : "light";
-  }, [isDark]);
-
+function ThemeToggle({ isDark, onToggle }: { isDark: boolean; onToggle: () => void }) {
   return (
     <button
-      onClick={() => setIsDark((d) => !d)}
+      onClick={onToggle}
       className="theme-toggle h-9 w-9 rounded-xl border bg-card flex items-center justify-center transition-colors hover:bg-muted"
       aria-label={`Switch to ${isDark ? "light" : "dark"} mode`}
       data-testid="theme-toggle"
@@ -386,6 +373,18 @@ export default function Home() {
   const [mapRef, setMapRef] = useState<L.Map | null>(null);
   const markerRefs = useRef<Record<number, L.Marker>>({});
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [radiusKm, setRadiusKm] = useState(200);
+  const [showRadiusSlider, setShowRadiusSlider] = useState(false);
+
+  // Theme — dark by default
+  const [isDark, setIsDark] = useState(true);
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", isDark ? "dark" : "light");
+  }, [isDark]);
+  // Set dark on first mount immediately
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", "dark");
+  }, []);
 
   // Hide splash after 1.8s
   useEffect(() => {
@@ -404,10 +403,10 @@ export default function Home() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // Fetch sunny spots
+  // Fetch sunny spots — re-runs when radius changes
   const { data: spots, isLoading: spotsLoading, refetch: refetchSpots } = useQuery<SunnySpot[]>({
-    queryKey: ["/api/weather/sunny-spots", coords?.lat, coords?.lon],
-    queryFn: () => fetchSunnySpots(coords!.lat, coords!.lon) as Promise<SunnySpot[]>,
+    queryKey: ["/api/weather/sunny-spots", coords?.lat, coords?.lon, radiusKm],
+    queryFn: () => fetchSunnySpots(coords!.lat, coords!.lon, radiusKm) as Promise<SunnySpot[]>,
     enabled: !!coords,
     staleTime: 5 * 60 * 1000,
   });
@@ -528,7 +527,7 @@ export default function Home() {
                 <p className="text-[11px] text-muted-foreground leading-none mt-0.5 font-medium">Escape the clouds</p>
               </div>
             </div>
-            <ThemeToggle />
+            <ThemeToggle isDark={isDark} onToggle={() => setIsDark((d) => !d)} />
           </div>
         </header>
 
@@ -584,7 +583,42 @@ export default function Home() {
                     : <Locate className="w-4 h-4" />
                   }
                 </Button>
+                {/* Radius toggle */}
+                <Button
+                  variant="outline"
+                  onClick={() => setShowRadiusSlider((v) => !v)}
+                  className={`h-11 px-3.5 rounded-xl transition-colors ${showRadiusSlider ? "border-primary text-primary" : ""}`}
+                  title="Set search radius"
+                  data-testid="button-radius"
+                >
+                  <SlidersHorizontal className="w-4 h-4" />
+                </Button>
               </div>
+
+              {/* Radius slider panel */}
+              {showRadiusSlider && (
+                <div className="mt-2 px-4 py-3 rounded-xl border bg-card animate-slide-up radius-panel">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                      <SlidersHorizontal className="w-3 h-3" /> Search radius
+                    </span>
+                    <span className="text-xs font-bold tabular-nums" style={{ color: "hsl(var(--primary))" }}>
+                      {radiusKm} km
+                    </span>
+                  </div>
+                  <Slider
+                    min={50} max={500} step={25}
+                    value={[radiusKm]}
+                    onValueChange={([v]) => setRadiusKm(v)}
+                    className="w-full"
+                    data-testid="slider-radius"
+                  />
+                  <div className="flex justify-between mt-1 text-[10px] text-muted-foreground">
+                    <span>50 km</span>
+                    <span>500 km</span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -730,10 +764,24 @@ export default function Home() {
                   ref={(map) => setMapRef(map)}
                   zoomControl
                 >
-                  <TileLayer
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                  />
+                  {/* CartoDB: dark matter in dark mode, Voyager in light mode */}
+                  {isDark ? (
+                    <TileLayer
+                      key="dark"
+                      url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                      attribution='&copy; <a href="https://carto.com/">CARTO</a> &copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
+                      subdomains="abcd"
+                      maxZoom={19}
+                    />
+                  ) : (
+                    <TileLayer
+                      key="light"
+                      url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+                      attribution='&copy; <a href="https://carto.com/">CARTO</a> &copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
+                      subdomains="abcd"
+                      maxZoom={19}
+                    />
+                  )}
 
                   {/* User location marker */}
                   <Marker position={[coords.lat, coords.lon]} icon={createUserIcon()}>
@@ -744,11 +792,11 @@ export default function Home() {
                     </Popup>
                   </Marker>
 
-                  {/* Search radius */}
+                  {/* Search radius circle */}
                   <Circle
                     center={[coords.lat, coords.lon]}
-                    radius={50000}
-                    pathOptions={{ color: "#3b82f6", fillColor: "#3b82f6", fillOpacity: 0.04, weight: 1.5, dashArray: "6 4" }}
+                    radius={radiusKm * 1000}
+                    pathOptions={{ color: "#f59e0b", fillColor: "#f59e0b", fillOpacity: 0.04, weight: 1.5, dashArray: "6 4" }}
                   />
 
                   {/* Spot markers */}

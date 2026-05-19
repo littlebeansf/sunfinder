@@ -47,13 +47,39 @@ export async function geocodeSearch(q: string) {
     const res = await fetch(`/api/geocode?q=${encodeURIComponent(q)}`);
     return res.json();
   }
-  const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=5`;
-  const res = await fetch(url, { headers: { "User-Agent": "SunFinder/1.0" } });
-  const data = await res.json() as any[];
-  return data.map((item: any) => ({ name: item.display_name, lat: parseFloat(item.lat), lon: parseFloat(item.lon) }));
+  // Photon (Komoot) has full CORS support — safe for browser calls
+  const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=5&lang=en`;
+  const res = await fetch(url);
+  const data = await res.json() as any;
+  return (data.features || []).map((f: any) => ({
+    name: [
+      f.properties.name,
+      f.properties.city || f.properties.county,
+      f.properties.state,
+      f.properties.country,
+    ].filter(Boolean).join(", "),
+    lat: f.geometry.coordinates[1],
+    lon: f.geometry.coordinates[0],
+  }));
 }
 
 export async function reverseGeocode(lat: number, lon: number) {
+  if (IS_STATIC) {
+    // Photon reverse geocode — full CORS, no User-Agent required
+    try {
+      const url = `https://photon.komoot.io/reverse?lat=${lat}&lon=${lon}&limit=1&lang=en`;
+      const res = await fetch(url);
+      const data = await res.json() as any;
+      const p = data.features?.[0]?.properties || {};
+      return {
+        name: p.name || p.city || p.town || p.county || "Unknown",
+        region: p.state || p.county || "",
+        country: (p.countrycode || "").toUpperCase(),
+      };
+    } catch {
+      return { name: "Unknown", region: "", country: "" };
+    }
+  }
   const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=10`;
   const res = await fetch(url, { headers: { "User-Agent": "SunFinder/1.0" } });
   const data = await res.json() as any;
@@ -65,14 +91,36 @@ export async function reverseGeocode(lat: number, lon: number) {
   };
 }
 
-function generateCandidates(lat: number, lon: number) {
-  const offsets = [
-    { dlat: 1.5, dlon: 0 }, { dlat: -1.5, dlon: 0 }, { dlat: 0, dlon: 2.0 }, { dlat: 0, dlon: -2.0 },
-    { dlat: 1.5, dlon: 2.0 }, { dlat: 1.5, dlon: -2.0 }, { dlat: -1.5, dlon: 2.0 }, { dlat: -1.5, dlon: -2.0 },
-    { dlat: 3.0, dlon: 0 }, { dlat: -3.0, dlon: 0 }, { dlat: 0, dlon: 4.0 }, { dlat: 0, dlon: -4.0 },
-    { dlat: 3.0, dlon: 3.0 }, { dlat: -3.0, dlon: 3.0 }, { dlat: -3.0, dlon: -3.0 }, { dlat: 3.0, dlon: -3.0 },
+// radiusKm: search radius in km (default 200). Offsets are scaled to fit ~4 rings.
+export function generateCandidates(lat: number, lon: number, radiusKm = 200) {
+  // Convert km to approximate degrees (1° lat ≈ 111 km)
+  const latPerKm = 1 / 111;
+  const lonPerKm = 1 / (111 * Math.cos((lat * Math.PI) / 180));
+  const near = radiusKm * 0.4;   // ~40% of radius
+  const mid  = radiusKm * 0.7;   // ~70% of radius
+  const far  = radiusKm * 1.0;   // full radius
+  const rings = [
+    // Near ring (4 cardinal)
+    { dlat:  near * latPerKm, dlon: 0 },
+    { dlat: -near * latPerKm, dlon: 0 },
+    { dlat: 0, dlon:  near * lonPerKm },
+    { dlat: 0, dlon: -near * lonPerKm },
+    // Mid ring (4 diagonal)
+    { dlat:  mid * latPerKm, dlon:  mid * lonPerKm },
+    { dlat:  mid * latPerKm, dlon: -mid * lonPerKm },
+    { dlat: -mid * latPerKm, dlon:  mid * lonPerKm },
+    { dlat: -mid * latPerKm, dlon: -mid * lonPerKm },
+    // Far ring (4 cardinal + 4 diagonal)
+    { dlat:  far * latPerKm, dlon: 0 },
+    { dlat: -far * latPerKm, dlon: 0 },
+    { dlat: 0, dlon:  far * lonPerKm },
+    { dlat: 0, dlon: -far * lonPerKm },
+    { dlat:  far * 0.7 * latPerKm, dlon:  far * 0.7 * lonPerKm },
+    { dlat: -far * 0.7 * latPerKm, dlon:  far * 0.7 * lonPerKm },
+    { dlat: -far * 0.7 * latPerKm, dlon: -far * 0.7 * lonPerKm },
+    { dlat:  far * 0.7 * latPerKm, dlon: -far * 0.7 * lonPerKm },
   ];
-  return offsets.map((o) => ({
+  return rings.map((o) => ({
     lat: Math.max(-89, Math.min(89, lat + o.dlat)),
     lon: ((lon + o.dlon + 180) % 360) - 180,
   }));
@@ -86,7 +134,7 @@ function generateDesc(temp: number, cloudCover: number, score: number, weatherCo
   return `${getWmoDesc(weatherCode)} at ${temp}°C — probably not worth the trip.`;
 }
 
-export async function fetchCurrentWeather(lat: number, lon: number) {
+export async function fetchCurrentWeather(lat: number, lon: number, _radiusKm?: number) {
   if (!IS_STATIC) {
     const res = await fetch(`/api/weather/current?lat=${lat}&lon=${lon}`);
     return res.json();
@@ -111,12 +159,12 @@ export async function fetchCurrentWeather(lat: number, lon: number) {
   };
 }
 
-export async function fetchSunnySpots(lat: number, lon: number) {
+export async function fetchSunnySpots(lat: number, lon: number, radiusKm = 200) {
   if (!IS_STATIC) {
-    const res = await fetch(`/api/weather/sunny-spots?lat=${lat}&lon=${lon}`);
+    const res = await fetch(`/api/weather/sunny-spots?lat=${lat}&lon=${lon}&radius=${radiusKm}`);
     return res.json();
   }
-  const candidates = generateCandidates(lat, lon);
+  const candidates = generateCandidates(lat, lon, radiusKm);
   const lats = candidates.map(p => p.lat.toFixed(4)).join(",");
   const lons = candidates.map(p => p.lon.toFixed(4)).join(",");
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${lats}&longitude=${lons}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,cloud_cover,wind_speed_10m,is_day&timezone=auto&forecast_days=1`;

@@ -412,6 +412,27 @@ h1, h2, h3, h4, h5, h6 {
 }
 .marker-animate { animation: markerBounce 0.45s cubic-bezier(0.34,1.56,0.64,1) both; }
 
+/* ===== RADIUS PANEL ===== */
+.radius-panel {
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+}
+
+/* ===== SLIDER (golden accent) ===== */
+[data-radix-slider-root] [data-radix-slider-range] {
+  background: hsl(var(--primary)) !important;
+}
+[data-radix-slider-root] [data-radix-slider-thumb] {
+  width: 18px;
+  height: 18px;
+  background: hsl(var(--primary)) !important;
+  border: 2px solid hsl(var(--card)) !important;
+  box-shadow: 0 2px 8px rgba(245,158,11,0.35) !important;
+  transition: transform 0.15s ease;
+}
+[data-radix-slider-root] [data-radix-slider-thumb]:hover {
+  transform: scale(1.15);
+}
+
 /* ===== TOAST in dark mode ===== */
 [data-theme="dark"] [data-radix-toast-viewport] { filter: brightness(0.95); }
 

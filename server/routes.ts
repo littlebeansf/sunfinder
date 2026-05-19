@@ -60,27 +60,32 @@ function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): nu
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-// Generate candidate spots in a grid around the user's location (up to ~400km)
-function generateCandidates(lat: number, lon: number) {
-  const offsets = [
-    { dlat: 1.5, dlon: 0, label: "North" },
-    { dlat: -1.5, dlon: 0, label: "South" },
-    { dlat: 0, dlon: 2.0, label: "East" },
-    { dlat: 0, dlon: -2.0, label: "West" },
-    { dlat: 1.5, dlon: 2.0, label: "Northeast" },
-    { dlat: 1.5, dlon: -2.0, label: "Northwest" },
-    { dlat: -1.5, dlon: 2.0, label: "Southeast" },
-    { dlat: -1.5, dlon: -2.0, label: "Southwest" },
-    { dlat: 3.0, dlon: 0, label: "Far North" },
-    { dlat: -3.0, dlon: 0, label: "Far South" },
-    { dlat: 0, dlon: 4.0, label: "Far East" },
-    { dlat: 0, dlon: -4.0, label: "Far West" },
-    { dlat: 3.0, dlon: 3.0, label: "Far Northeast" },
-    { dlat: -3.0, dlon: 3.0, label: "Far Southeast" },
-    { dlat: -3.0, dlon: -3.0, label: "Far Southwest" },
-    { dlat: 3.0, dlon: -3.0, label: "Far Northwest" },
+// Generate candidate spots scaled to radiusKm (default 200km)
+function generateCandidates(lat: number, lon: number, radiusKm = 200) {
+  const latPerKm = 1 / 111;
+  const lonPerKm = 1 / (111 * Math.cos((lat * Math.PI) / 180));
+  const near = radiusKm * 0.4;
+  const mid  = radiusKm * 0.7;
+  const far  = radiusKm * 1.0;
+  const rings = [
+    { dlat:  near * latPerKm, dlon: 0,                    label: "North" },
+    { dlat: -near * latPerKm, dlon: 0,                    label: "South" },
+    { dlat: 0,                dlon:  near * lonPerKm,     label: "East" },
+    { dlat: 0,                dlon: -near * lonPerKm,     label: "West" },
+    { dlat:  mid * latPerKm,  dlon:  mid * lonPerKm,      label: "Northeast" },
+    { dlat:  mid * latPerKm,  dlon: -mid * lonPerKm,      label: "Northwest" },
+    { dlat: -mid * latPerKm,  dlon:  mid * lonPerKm,      label: "Southeast" },
+    { dlat: -mid * latPerKm,  dlon: -mid * lonPerKm,      label: "Southwest" },
+    { dlat:  far * latPerKm,  dlon: 0,                    label: "Far North" },
+    { dlat: -far * latPerKm,  dlon: 0,                    label: "Far South" },
+    { dlat: 0,                dlon:  far * lonPerKm,      label: "Far East" },
+    { dlat: 0,                dlon: -far * lonPerKm,      label: "Far West" },
+    { dlat:  far * 0.7 * latPerKm, dlon:  far * 0.7 * lonPerKm, label: "Far Northeast" },
+    { dlat: -far * 0.7 * latPerKm, dlon:  far * 0.7 * lonPerKm, label: "Far Southeast" },
+    { dlat: -far * 0.7 * latPerKm, dlon: -far * 0.7 * lonPerKm, label: "Far Southwest" },
+    { dlat:  far * 0.7 * latPerKm, dlon: -far * 0.7 * lonPerKm, label: "Far Northwest" },
   ];
-  return offsets.map((o) => ({
+  return rings.map((o) => ({
     lat: Math.max(-89, Math.min(89, lat + o.dlat)),
     lon: ((lon + o.dlon + 180) % 360) - 180,
     label: o.label,
@@ -169,10 +174,11 @@ export async function registerRoutes(httpServer: Server, app: Express) {
   app.get("/api/weather/sunny-spots", async (req, res) => {
     const lat = parseFloat(req.query.lat as string);
     const lon = parseFloat(req.query.lon as string);
+    const radiusKm = Math.max(50, Math.min(500, parseFloat((req.query.radius as string) || "200")));
     if (isNaN(lat) || isNaN(lon)) return res.status(400).json({ error: "Invalid coordinates" });
 
     try {
-      const candidates = generateCandidates(lat, lon);
+      const candidates = generateCandidates(lat, lon, radiusKm);
       const weatherArr = await fetchWeatherForPoints(candidates);
 
       // Geocode all candidates in parallel
