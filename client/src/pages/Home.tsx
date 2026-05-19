@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { geocodeSearch, fetchCurrentWeather, fetchSunnySpots } from "@/lib/api";
+// fetchCurrentWeather is used in CurrentWeatherCard component below
 import { useToast } from "@/hooks/use-toast";
 import { MapContainer, TileLayer, Marker, Popup, useMap, Circle } from "react-leaflet";
 import L from "leaflet";
@@ -99,7 +101,7 @@ function MapFitBounds({ spots, userLat, userLon }: { spots: SunnySpot[]; userLat
 function CurrentWeatherCard({ lat, lon }: { lat: number; lon: number }) {
   const { data, isLoading } = useQuery({
     queryKey: ["/api/weather/current", lat, lon],
-    queryFn: () => apiRequest("GET", `/api/weather/current?lat=${lat}&lon=${lon}`).then((r) => r.json()),
+    queryFn: () => fetchCurrentWeather(lat, lon),
     staleTime: 5 * 60 * 1000,
   });
 
@@ -299,8 +301,7 @@ export default function Home() {
   // Fetch sunny spots
   const { data: spots, isLoading: spotsLoading, refetch: refetchSpots } = useQuery<SunnySpot[]>({
     queryKey: ["/api/weather/sunny-spots", coords?.lat, coords?.lon],
-    queryFn: () =>
-      apiRequest("GET", `/api/weather/sunny-spots?lat=${coords!.lat}&lon=${coords!.lon}`).then((r) => r.json()),
+    queryFn: () => fetchSunnySpots(coords!.lat, coords!.lon) as Promise<SunnySpot[]>,
     enabled: !!coords,
     staleTime: 5 * 60 * 1000,
   });
@@ -349,8 +350,7 @@ export default function Home() {
   const handleSearch = useCallback(async () => {
     if (!searchQuery.trim()) return;
     try {
-      const res = await apiRequest("GET", `/api/geocode?q=${encodeURIComponent(searchQuery)}`);
-      const data = await res.json();
+      const data = await geocodeSearch(searchQuery);
       setSearchResults(data);
       setShowDropdown(true);
     } catch {
