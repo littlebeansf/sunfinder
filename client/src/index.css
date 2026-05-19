@@ -376,107 +376,333 @@ h1, h2, h3, h4, h5, h6 {
   animation: scoreGrow 0.9s cubic-bezier(0.22,1,0.36,1) both;
 }
 
-/* ===== WEATHER BANNER ANIMATIONS ===== */
+/* ===== WEATHER BACKGROUND ANIMATIONS ===== */
 
-/* Sun glow pulse */
-@keyframes sunGlow {
-  0%, 100% { filter: drop-shadow(0 0 8px rgba(251,191,36,0.55)) drop-shadow(0 0 24px rgba(245,158,11,0.25)); transform: scale(1); }
-  50%       { filter: drop-shadow(0 0 18px rgba(251,191,36,0.85)) drop-shadow(0 0 40px rgba(245,158,11,0.45)); transform: scale(1.04); }
+/* Shared keyframes */
+@keyframes wxSunRotate  { from { transform: rotate(0deg); }   to { transform: rotate(360deg); } }
+@keyframes wxSunGlow    {
+  0%,100% { opacity: 0.45; transform: scale(1); }
+  50%     { opacity: 0.75; transform: scale(1.08); }
 }
-/* Sun rays rotate */
-@keyframes sunRaysSpin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
+@keyframes wxRayPulse   {
+  0%,100% { stroke-opacity: 0.35; }
+  50%     { stroke-opacity: 0.8; }
 }
-/* Cloud float */
-@keyframes cloudFloat {
-  0%, 100% { transform: translateX(0); }
-  50%       { transform: translateX(5px); }
+@keyframes wxCloudDrift {
+  0%,100% { transform: translateX(0px); }
+  50%     { transform: translateX(12px); }
 }
-/* Rain drop fall */
-@keyframes rainFall {
-  0%   { transform: translateY(-8px); opacity: 0; }
-  20%  { opacity: 1; }
-  100% { transform: translateY(28px); opacity: 0; }
+@keyframes wxCloudDrift2 {
+  0%,100% { transform: translateX(0px); }
+  50%     { transform: translateX(-10px); }
 }
-/* Snow float */
-@keyframes snowFall {
-  0%   { transform: translateY(-6px) rotate(0deg); opacity: 0; }
-  20%  { opacity: 0.9; }
-  100% { transform: translateY(26px) rotate(180deg); opacity: 0; }
+@keyframes wxRainDrop {
+  0%   { transform: translateY(-120%); opacity: 0; }
+  15%  { opacity: 0.7; }
+  85%  { opacity: 0.7; }
+  100% { transform: translateY(130%); opacity: 0; }
 }
-/* Lightning flash */
-@keyframes lightningFlash {
-  0%, 90%, 100% { opacity: 0; }
-  92%, 96%      { opacity: 1; }
-  94%           { opacity: 0.4; }
+@keyframes wxSnowDrift {
+  0%   { transform: translateY(-100%) translateX(0px); opacity: 0; }
+  20%  { opacity: 0.8; }
+  80%  { opacity: 0.8; }
+  100% { transform: translateY(110%) translateX(8px); opacity: 0; }
 }
-/* Fog drift */
-@keyframes fogDrift {
-  0%, 100% { opacity: 0.5; transform: translateX(0); }
-  50%       { opacity: 0.9; transform: translateX(6px); }
+@keyframes wxLightning  {
+  0%,87%,100% { opacity: 0; }
+  89%,93%     { opacity: 1; }
+  91%         { opacity: 0.2; }
 }
-/* Moon sway */
-@keyframes moonSway {
-  0%, 100% { transform: rotate(-8deg) scale(1); }
-  50%       { transform: rotate(8deg) scale(1.06); }
+@keyframes wxFogMove    {
+  0%,100% { transform: translateX(-5%) scaleX(1); opacity: 0.4; }
+  50%     { transform: translateX(5%) scaleX(1.05); opacity: 0.75; }
 }
-/* Star twinkle */
-@keyframes starTwinkle {
-  0%, 100% { opacity: 0.2; transform: scale(0.8); }
-  50%       { opacity: 1;   transform: scale(1.2); }
+@keyframes wxMoonPulse  {
+  0%,100% { filter: drop-shadow(0 0 14px rgba(253,230,138,0.4)); }
+  50%     { filter: drop-shadow(0 0 32px rgba(253,230,138,0.75)); }
 }
-/* Wind wave */
-@keyframes windWave {
-  0%, 100% { d: path("M2 8 Q8 4 14 8 Q20 12 26 8"); }
-  50%       { d: path("M2 8 Q8 12 14 8 Q20 4 26 8"); }
+@keyframes wxStarBlink  {
+  0%,100% { opacity: 0.15; r: 1.5px; }
+  50%     { opacity: 1;    r: 2.5px; }
+}
+@keyframes wxAurora     {
+  0%,100% { transform: scaleX(1)   skewX(0deg);  opacity: 0.25; }
+  50%     { transform: scaleX(1.1) skewX(-6deg); opacity: 0.55; }
+}
+@keyframes wxHaloBreath {
+  0%,100% { r: 62px; opacity: 0.18; }
+  50%     { r: 74px; opacity: 0.30; }
 }
 
-/* Weather banner wrapper */
-.wx-banner {
+/* Full-bleed weather card background */
+.wx-bg {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+  z-index: 0;
+  pointer-events: none;
+}
+.wx-bg svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+/* Content above the background */
+.wx-content {
   position: relative;
-  width: 120px;
-  height: 80px;
-  flex-shrink: 0;
+  z-index: 1;
 }
-.wx-banner svg {
-  overflow: visible;
-}
-
-/* Sunny */
-.wx-sun-core   { animation: sunGlow 3s ease-in-out infinite; }
-.wx-sun-rays   { transform-origin: 60px 40px; animation: sunRaysSpin 14s linear infinite; }
 
 /* Cloud body */
-.wx-cloud      { animation: cloudFloat 5s ease-in-out infinite; }
-.wx-cloud-2    { animation: cloudFloat 5s 1.5s ease-in-out infinite; }
+.wx-cloud      { animation: wxCloudDrift  6s ease-in-out infinite; }
+.wx-cloud-2    { animation: wxCloudDrift2 7s ease-in-out infinite; }
 
-/* Rain drops */
-.wx-rain-1 { animation: rainFall 1.1s 0.0s linear infinite; }
-.wx-rain-2 { animation: rainFall 1.1s 0.2s linear infinite; }
-.wx-rain-3 { animation: rainFall 1.1s 0.4s linear infinite; }
-.wx-rain-4 { animation: rainFall 1.1s 0.6s linear infinite; }
-.wx-rain-5 { animation: rainFall 1.1s 0.8s linear infinite; }
+/* Rain drops — staggered */
+.wx-rain-1 { animation: wxRainDrop 1.2s 0.00s linear infinite; }
+.wx-rain-2 { animation: wxRainDrop 1.2s 0.18s linear infinite; }
+.wx-rain-3 { animation: wxRainDrop 1.2s 0.36s linear infinite; }
+.wx-rain-4 { animation: wxRainDrop 1.2s 0.54s linear infinite; }
+.wx-rain-5 { animation: wxRainDrop 1.2s 0.72s linear infinite; }
+.wx-rain-6 { animation: wxRainDrop 1.2s 0.90s linear infinite; }
+.wx-rain-7 { animation: wxRainDrop 1.2s 1.05s linear infinite; }
+.wx-rain-8 { animation: wxRainDrop 1.2s 0.45s linear infinite; }
 
 /* Snow */
-.wx-snow-1 { animation: snowFall 1.8s 0.0s linear infinite; }
-.wx-snow-2 { animation: snowFall 1.8s 0.4s linear infinite; }
-.wx-snow-3 { animation: snowFall 1.8s 0.8s linear infinite; }
-.wx-snow-4 { animation: snowFall 1.8s 1.2s linear infinite; }
+.wx-snow-1 { animation: wxSnowDrift 2.2s 0.0s  linear infinite; }
+.wx-snow-2 { animation: wxSnowDrift 2.2s 0.55s linear infinite; }
+.wx-snow-3 { animation: wxSnowDrift 2.2s 1.1s  linear infinite; }
+.wx-snow-4 { animation: wxSnowDrift 2.2s 1.65s linear infinite; }
+.wx-snow-5 { animation: wxSnowDrift 2.2s 0.3s  linear infinite; }
+.wx-snow-6 { animation: wxSnowDrift 2.2s 0.9s  linear infinite; }
 
 /* Lightning */
-.wx-lightning { animation: lightningFlash 3s ease-in-out infinite; }
+.wx-lightning { animation: wxLightning 3.5s ease-in-out infinite; }
 
 /* Fog */
-.wx-fog-1 { animation: fogDrift 4s 0.0s ease-in-out infinite; }
-.wx-fog-2 { animation: fogDrift 4s 1.3s ease-in-out infinite; }
-.wx-fog-3 { animation: fogDrift 4s 2.6s ease-in-out infinite; }
+.wx-fog-1 { animation: wxFogMove 5s 0.0s ease-in-out infinite; }
+.wx-fog-2 { animation: wxFogMove 5s 1.6s ease-in-out infinite; }
+.wx-fog-3 { animation: wxFogMove 5s 3.2s ease-in-out infinite; }
 
 /* Moon + stars */
-.wx-moon  { animation: moonSway 6s ease-in-out infinite; transform-origin: 60px 40px; }
-.wx-star-1 { animation: starTwinkle 2.0s 0.0s ease-in-out infinite; }
-.wx-star-2 { animation: starTwinkle 2.0s 0.7s ease-in-out infinite; }
-.wx-star-3 { animation: starTwinkle 2.0s 1.4s ease-in-out infinite; }
+.wx-moon  { animation: wxMoonPulse 4s ease-in-out infinite; }
+.wx-star-1 { animation: wxStarBlink 2.2s 0.0s ease-in-out infinite; }
+.wx-star-2 { animation: wxStarBlink 2.2s 0.8s ease-in-out infinite; }
+.wx-star-3 { animation: wxStarBlink 2.2s 1.6s ease-in-out infinite; }
+.wx-star-4 { animation: wxStarBlink 1.8s 0.4s ease-in-out infinite; }
+.wx-star-5 { animation: wxStarBlink 1.8s 1.2s ease-in-out infinite; }
+
+/* Aurora band */
+.wx-aurora-1 { animation: wxAurora 6s 0.0s ease-in-out infinite; }
+.wx-aurora-2 { animation: wxAurora 6s 2.0s ease-in-out infinite; }
+.wx-aurora-3 { animation: wxAurora 6s 4.0s ease-in-out infinite; }
+
+/* Halo ring */
+.wx-halo { animation: wxHaloBreath 4s ease-in-out infinite; }
+
+/* Rays spin */
+.wx-rays { animation: wxSunRotate 20s linear infinite; transform-origin: center; }
+
+/* Glow */
+.wx-glow { animation: wxSunGlow 3.5s ease-in-out infinite; transform-origin: center; }
+
+/* Ray pulse */
+.wx-ray-pulse { animation: wxRayPulse 2.5s ease-in-out infinite; }
+
+/* ===== 3D GLOBE (landing page) ===== */
+@keyframes globe3dSpin     { from { transform: rotateY(0deg); }   to { transform: rotateY(360deg); } }
+@keyframes globe3dOrbit    { from { transform: rotateZ(0deg); }   to { transform: rotateZ(360deg); } }
+@keyframes globe3dFloat    {
+  0%,100% { transform: translateY(0px); }
+  50%     { transform: translateY(-10px); }
+}
+@keyframes globe3dAtmo     {
+  0%,100% { opacity: 0.5; transform: scale(1); }
+  50%     { opacity: 0.8; transform: scale(1.03); }
+}
+@keyframes globe3dMarker   {
+  0%,100% { opacity: 0; transform: scale(0.4); }
+  30%,70% { opacity: 1; transform: scale(1); }
+}
+@keyframes globe3dRing     {
+  0%     { transform: scale(0.5); opacity: 0.8; }
+  100%   { transform: scale(2.6); opacity: 0; }
+}
+@keyframes globe3dShadow   {
+  0%,100% { transform: scaleX(1);    opacity: 0.35; }
+  50%     { transform: scaleX(0.88); opacity: 0.22; }
+}
+
+.globe3d-scene {
+  position: relative;
+  width: 240px;
+  height: 240px;
+  margin: 0 auto 12px;
+  animation: globe3dFloat 5s ease-in-out infinite;
+  perspective: 600px;
+}
+
+.globe3d-atmosphere {
+  position: absolute;
+  inset: -14px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 38% 36%,
+    rgba(250,204,21,0.13) 0%,
+    rgba(14,165,233,0.10) 45%,
+    rgba(99,102,241,0.06) 70%,
+    transparent 100%
+  );
+  animation: globe3dAtmo 5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.globe3d-sphere {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 36% 32%,
+    hsl(220 35% 22%) 0%,
+    hsl(220 30% 14%) 55%,
+    hsl(220 40% 8%) 100%
+  );
+  box-shadow:
+    inset -18px -14px 40px rgba(0,0,0,0.55),
+    inset 10px 10px 28px rgba(250,204,21,0.10),
+    0 0 0 1px rgba(255,255,255,0.06);
+  overflow: hidden;
+}
+[data-theme="light"] .globe3d-sphere {
+  background: radial-gradient(
+    circle at 36% 32%,
+    hsl(200 60% 62%) 0%,
+    hsl(210 55% 45%) 45%,
+    hsl(220 50% 30%) 100%
+  );
+  box-shadow:
+    inset -18px -14px 40px rgba(0,0,0,0.28),
+    inset 10px 10px 28px rgba(255,255,200,0.22),
+    0 0 0 1px rgba(255,255,255,0.15);
+}
+
+.globe3d-grid {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  animation: globe3dSpin 18s linear infinite;
+}
+
+.globe3d-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.globe3d-highlight {
+  position: absolute;
+  top: 8%;
+  left: 12%;
+  width: 42%;
+  height: 38%;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 40% 38%,
+    rgba(255,255,255,0.16) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
+}
+
+.globe3d-terminator {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: linear-gradient(
+    105deg,
+    transparent 42%,
+    rgba(0,0,0,0.38) 58%,
+    rgba(0,0,0,0.65) 100%
+  );
+  pointer-events: none;
+}
+
+.globe3d-markers {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.globe3d-marker {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  animation: globe3dMarker 3s ease-in-out infinite;
+}
+.globe3d-marker:nth-child(1) { animation-delay: 0.0s; }
+.globe3d-marker:nth-child(2) { animation-delay: 0.7s; }
+.globe3d-marker:nth-child(3) { animation-delay: 1.4s; }
+.globe3d-marker:nth-child(4) { animation-delay: 2.1s; }
+.globe3d-marker:nth-child(5) { animation-delay: 2.8s; }
+
+.globe3d-marker-dot {
+  position: absolute;
+  inset: 2px;
+  border-radius: 50%;
+  background: #f59e0b;
+  box-shadow: 0 0 6px 2px rgba(245,158,11,0.6);
+}
+
+.globe3d-marker-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1.5px solid rgba(245,158,11,0.7);
+  animation: globe3dRing 1.4s ease-out infinite;
+}
+
+.globe3d-shadow {
+  position: absolute;
+  bottom: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 70%;
+  height: 18px;
+  background: radial-gradient(ellipse, rgba(0,0,0,0.35) 0%, transparent 70%);
+  border-radius: 50%;
+  animation: globe3dShadow 5s ease-in-out infinite;
+}
+
+/* Orbiting sun around globe */
+.globe3d-orbit {
+  position: absolute;
+  inset: -30px;
+  border-radius: 50%;
+  animation: globe3dOrbit 10s linear infinite;
+  pointer-events: none;
+}
+
+.globe3d-sun-orb {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%) translateY(-6px);
+  filter: drop-shadow(0 0 10px rgba(245,158,11,0.8));
+}
+
+/* Weather bg state tints */
+.wx-bg-sun      { background: linear-gradient(135deg, rgba(253,230,138,0.12) 0%, rgba(245,158,11,0.08) 100%); }
+.wx-bg-partly   { background: linear-gradient(135deg, rgba(253,230,138,0.10) 0%, rgba(148,163,184,0.08) 100%); }
+.wx-bg-overcast { background: linear-gradient(135deg, rgba(100,116,139,0.14) 0%, rgba(71,85,105,0.12) 100%); }
+.wx-bg-rain     { background: linear-gradient(135deg, rgba(71,85,105,0.18) 0%, rgba(59,130,246,0.07) 100%); }
+.wx-bg-drizzle  { background: linear-gradient(135deg, rgba(148,163,184,0.12) 0%, rgba(186,230,253,0.08) 100%); }
+.wx-bg-shower   { background: linear-gradient(135deg, rgba(253,230,138,0.08) 0%, rgba(96,165,250,0.10) 100%); }
+.wx-bg-snow     { background: linear-gradient(135deg, rgba(226,232,240,0.18) 0%, rgba(186,230,253,0.12) 100%); }
+.wx-bg-storm    { background: linear-gradient(135deg, rgba(15,23,42,0.30) 0%, rgba(30,41,59,0.25) 100%); }
+.wx-bg-night    { background: linear-gradient(135deg, rgba(15,23,42,0.35) 0%, rgba(30,27,75,0.28) 100%); }
 
 /* ===== GLOBE ICON IN SEARCH ===== */
 @keyframes globeSpin {
