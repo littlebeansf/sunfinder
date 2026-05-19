@@ -2,7 +2,7 @@ import type { Express } from "express";
 import type { Server } from "http";
 import { storage } from "./storage";
 import { insertSavedLocationSchema } from "@shared/schema";
-import fetch from "node-fetch";
+// Node 18+ has native fetch — no import needed
 
 // WMO weather code descriptions
 const WMO_CODES: Record<number, string> = {
