@@ -157,6 +157,235 @@ function SplashScreen({ visible }: { visible: boolean }) {
   );
 }
 
+// ===== ANIMATED GLOBE ICON =====
+function GlobeIcon() {
+  return (
+    <span className="globe-icon" aria-hidden="true">
+      <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" width="16" height="16">
+        {/* Outer sphere */}
+        <circle className="globe-sphere" cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.2" />
+        {/* Rotating meridian ellipse */}
+        <ellipse className="globe-meridian" cx="8" cy="8" rx="3.4" ry="7" stroke="currentColor" strokeWidth="1.1" strokeDasharray="2 1.5" />
+        {/* Static equator line */}
+        <line className="globe-equator" x1="1" y1="8" x2="15" y2="8" stroke="currentColor" strokeWidth="1" strokeDasharray="1.5 1.2" />
+        {/* Latitude arc top */}
+        <path d="M2.5 5 Q8 3.5 13.5 5" stroke="currentColor" strokeWidth="0.9" strokeDasharray="1.2 1" />
+        {/* Latitude arc bottom */}
+        <path d="M2.5 11 Q8 12.5 13.5 11" stroke="currentColor" strokeWidth="0.9" strokeDasharray="1.2 1" />
+      </svg>
+    </span>
+  );
+}
+
+// ===== ANIMATED WEATHER BANNER =====
+function WeatherBanner({ code, isNight }: { code: number; isNight: boolean }) {
+  // Night
+  if (isNight) return (
+    <div className="wx-banner">
+      <svg viewBox="0 0 120 80" fill="none" xmlns="http://www.w3.org/2000/svg" width="120" height="80">
+        {/* Stars */}
+        <circle className="wx-star-1" cx="20" cy="14" r="2" fill="#e2e8f0" />
+        <circle className="wx-star-2" cx="90" cy="10" r="1.5" fill="#e2e8f0" />
+        <circle className="wx-star-3" cx="105" cy="28" r="1.8" fill="#cbd5e1" />
+        <circle className="wx-star-1" cx="38" cy="8" r="1.2" fill="#e2e8f0" />
+        <circle className="wx-star-2" cx="72" cy="18" r="1.5" fill="#cbd5e1" />
+        {/* Moon */}
+        <g className="wx-moon">
+          <path d="M60 16 C48 18 43 30 48 40 C38 35 37 20 46 13 C51 9 57 10 60 16 Z"
+            fill="#fde68a" />
+          <path d="M60 16 C52 20 50 29 54 37 C48 32 48 20 54 14 Z"
+            fill="#fbbf24" opacity="0.5" />
+        </g>
+        {/* Glow behind moon */}
+        <ellipse cx="50" cy="28" rx="14" ry="14" fill="rgba(253,230,138,0.10)" />
+      </svg>
+    </div>
+  );
+
+  // Thunderstorm (95-99)
+  if (code >= 95) return (
+    <div className="wx-banner">
+      <svg viewBox="0 0 120 80" fill="none" xmlns="http://www.w3.org/2000/svg" width="120" height="80">
+        {/* Dark storm cloud */}
+        <g className="wx-cloud">
+          <ellipse cx="62" cy="34" rx="30" ry="18" fill="#475569" />
+          <ellipse cx="44" cy="38" rx="20" ry="14" fill="#334155" />
+          <ellipse cx="80" cy="38" rx="18" ry="13" fill="#475569" />
+        </g>
+        {/* Rain */}
+        <line className="wx-rain-1" x1="42" y1="52" x2="38" y2="66" stroke="#93c5fd" strokeWidth="1.5" strokeLinecap="round" />
+        <line className="wx-rain-2" x1="56" y1="52" x2="52" y2="66" stroke="#93c5fd" strokeWidth="1.5" strokeLinecap="round" />
+        <line className="wx-rain-3" x1="70" y1="52" x2="66" y2="66" stroke="#93c5fd" strokeWidth="1.5" strokeLinecap="round" />
+        <line className="wx-rain-4" x1="84" y1="52" x2="80" y2="66" stroke="#93c5fd" strokeWidth="1.5" strokeLinecap="round" />
+        {/* Lightning bolt */}
+        <path className="wx-lightning" d="M63 50 L55 64 L62 64 L54 78" stroke="#fbbf24" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      </svg>
+    </div>
+  );
+
+  // Snow (71-77, 85-86)
+  if ((code >= 71 && code <= 77) || code === 85 || code === 86) return (
+    <div className="wx-banner">
+      <svg viewBox="0 0 120 80" fill="none" xmlns="http://www.w3.org/2000/svg" width="120" height="80">
+        <g className="wx-cloud">
+          <ellipse cx="62" cy="32" rx="28" ry="16" fill="#cbd5e1" />
+          <ellipse cx="44" cy="36" rx="18" ry="13" fill="#e2e8f0" />
+          <ellipse cx="80" cy="36" rx="16" ry="12" fill="#cbd5e1" />
+        </g>
+        {/* Snowflakes */}
+        <g className="wx-snow-1"><line x1="42" y1="50" x2="42" y2="62" stroke="#bae6fd" strokeWidth="1.5" strokeLinecap="round" /><line x1="36" y1="56" x2="48" y2="56" stroke="#bae6fd" strokeWidth="1.5" strokeLinecap="round" /></g>
+        <g className="wx-snow-2"><line x1="60" y1="52" x2="60" y2="64" stroke="#e0f2fe" strokeWidth="1.5" strokeLinecap="round" /><line x1="54" y1="58" x2="66" y2="58" stroke="#e0f2fe" strokeWidth="1.5" strokeLinecap="round" /></g>
+        <g className="wx-snow-3"><line x1="78" y1="50" x2="78" y2="62" stroke="#bae6fd" strokeWidth="1.5" strokeLinecap="round" /><line x1="72" y1="56" x2="84" y2="56" stroke="#bae6fd" strokeWidth="1.5" strokeLinecap="round" /></g>
+        <g className="wx-snow-4"><line x1="50" y1="62" x2="50" y2="74" stroke="#e0f2fe" strokeWidth="1.5" strokeLinecap="round" /><line x1="44" y1="68" x2="56" y2="68" stroke="#e0f2fe" strokeWidth="1.5" strokeLinecap="round" /></g>
+      </svg>
+    </div>
+  );
+
+  // Rain showers (80-82)
+  if (code >= 80 && code <= 82) return (
+    <div className="wx-banner">
+      <svg viewBox="0 0 120 80" fill="none" xmlns="http://www.w3.org/2000/svg" width="120" height="80">
+        {/* Sun behind */}
+        <circle cx="30" cy="22" r="13" fill="#fde68a" opacity="0.7" />
+        <g style={{ transformOrigin: "30px 22px", animation: "sunRaysSpin 14s linear infinite" }}>
+          {[0,45,90,135,180,225,270,315].map((a, i) => {
+            const r = Math.PI * a / 180;
+            return <line key={i} x1={30 + 15*Math.cos(r)} y1={22 + 15*Math.sin(r)} x2={30 + 20*Math.cos(r)} y2={22 + 20*Math.sin(r)} stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" />;
+          })}
+        </g>
+        <circle cx="30" cy="22" r="9" fill="#fbbf24" />
+        {/* Cloud */}
+        <g className="wx-cloud">
+          <ellipse cx="68" cy="32" rx="28" ry="16" fill="#94a3b8" />
+          <ellipse cx="50" cy="36" rx="18" ry="13" fill="#cbd5e1" />
+          <ellipse cx="86" cy="36" rx="16" ry="12" fill="#94a3b8" />
+        </g>
+        {/* Rain */}
+        <line className="wx-rain-1" x1="50" y1="50" x2="46" y2="64" stroke="#60a5fa" strokeWidth="1.5" strokeLinecap="round" />
+        <line className="wx-rain-2" x1="64" y1="50" x2="60" y2="64" stroke="#60a5fa" strokeWidth="1.5" strokeLinecap="round" />
+        <line className="wx-rain-3" x1="78" y1="50" x2="74" y2="64" stroke="#60a5fa" strokeWidth="1.5" strokeLinecap="round" />
+        <line className="wx-rain-4" x1="57" y1="58" x2="53" y2="72" stroke="#93c5fd" strokeWidth="1.5" strokeLinecap="round" />
+        <line className="wx-rain-5" x1="71" y1="58" x2="67" y2="72" stroke="#93c5fd" strokeWidth="1.5" strokeLinecap="round" />
+      </svg>
+    </div>
+  );
+
+  // Heavy rain (61-65)
+  if (code >= 61 && code <= 65) return (
+    <div className="wx-banner">
+      <svg viewBox="0 0 120 80" fill="none" xmlns="http://www.w3.org/2000/svg" width="120" height="80">
+        <g className="wx-cloud">
+          <ellipse cx="60" cy="30" rx="32" ry="18" fill="#64748b" />
+          <ellipse cx="40" cy="35" rx="20" ry="15" fill="#475569" />
+          <ellipse cx="80" cy="34" rx="20" ry="14" fill="#64748b" />
+        </g>
+        <line className="wx-rain-1" x1="38" y1="50" x2="33" y2="67" stroke="#60a5fa" strokeWidth="1.8" strokeLinecap="round" />
+        <line className="wx-rain-2" x1="52" y1="48" x2="47" y2="65" stroke="#3b82f6" strokeWidth="1.8" strokeLinecap="round" />
+        <line className="wx-rain-3" x1="66" y1="50" x2="61" y2="67" stroke="#60a5fa" strokeWidth="1.8" strokeLinecap="round" />
+        <line className="wx-rain-4" x1="80" y1="48" x2="75" y2="65" stroke="#3b82f6" strokeWidth="1.8" strokeLinecap="round" />
+        <line className="wx-rain-5" x1="44" y1="60" x2="39" y2="77" stroke="#93c5fd" strokeWidth="1.5" strokeLinecap="round" />
+        <line className="wx-rain-1" x1="58" y1="58" x2="53" y2="75" stroke="#60a5fa" strokeWidth="1.5" strokeLinecap="round" />
+        <line className="wx-rain-2" x1="72" y1="60" x2="67" y2="77" stroke="#93c5fd" strokeWidth="1.5" strokeLinecap="round" />
+      </svg>
+    </div>
+  );
+
+  // Drizzle (51-55)
+  if (code >= 51 && code <= 55) return (
+    <div className="wx-banner">
+      <svg viewBox="0 0 120 80" fill="none" xmlns="http://www.w3.org/2000/svg" width="120" height="80">
+        <g className="wx-cloud">
+          <ellipse cx="60" cy="30" rx="30" ry="17" fill="#94a3b8" />
+          <ellipse cx="40" cy="35" rx="19" ry="13" fill="#cbd5e1" />
+          <ellipse cx="80" cy="34" rx="18" ry="13" fill="#94a3b8" />
+        </g>
+        <line className="wx-rain-1" x1="44" y1="50" x2="42" y2="60" stroke="#93c5fd" strokeWidth="1.2" strokeLinecap="round" />
+        <line className="wx-rain-3" x1="60" y1="50" x2="58" y2="60" stroke="#bae6fd" strokeWidth="1.2" strokeLinecap="round" />
+        <line className="wx-rain-5" x1="76" y1="50" x2="74" y2="60" stroke="#93c5fd" strokeWidth="1.2" strokeLinecap="round" />
+        <line className="wx-rain-2" x1="52" y1="58" x2="50" y2="68" stroke="#bae6fd" strokeWidth="1.2" strokeLinecap="round" />
+        <line className="wx-rain-4" x1="68" y1="58" x2="66" y2="68" stroke="#93c5fd" strokeWidth="1.2" strokeLinecap="round" />
+      </svg>
+    </div>
+  );
+
+  // Fog (45-48)
+  if (code === 45 || code === 48) return (
+    <div className="wx-banner">
+      <svg viewBox="0 0 120 80" fill="none" xmlns="http://www.w3.org/2000/svg" width="120" height="80">
+        <line className="wx-fog-1" x1="16" y1="24" x2="104" y2="24" stroke="#cbd5e1" strokeWidth="5" strokeLinecap="round" />
+        <line className="wx-fog-2" x1="24" y1="36" x2="96" y2="36" stroke="#94a3b8" strokeWidth="4" strokeLinecap="round" />
+        <line className="wx-fog-3" x1="16" y1="48" x2="104" y2="48" stroke="#cbd5e1" strokeWidth="5" strokeLinecap="round" />
+        <line className="wx-fog-1" x1="28" y1="60" x2="92" y2="60" stroke="#94a3b8" strokeWidth="3.5" strokeLinecap="round" />
+        <line className="wx-fog-2" x1="20" y1="70" x2="100" y2="70" stroke="#cbd5e1" strokeWidth="3" strokeLinecap="round" />
+      </svg>
+    </div>
+  );
+
+  // Overcast (code === 3)
+  if (code === 3) return (
+    <div className="wx-banner">
+      <svg viewBox="0 0 120 80" fill="none" xmlns="http://www.w3.org/2000/svg" width="120" height="80">
+        <g className="wx-cloud-2">
+          <ellipse cx="50" cy="42" rx="22" ry="14" fill="#94a3b8" opacity="0.6" />
+        </g>
+        <g className="wx-cloud">
+          <ellipse cx="62" cy="30" rx="34" ry="20" fill="#94a3b8" />
+          <ellipse cx="40" cy="36" rx="22" ry="16" fill="#cbd5e1" />
+          <ellipse cx="84" cy="36" rx="20" ry="15" fill="#94a3b8" />
+        </g>
+      </svg>
+    </div>
+  );
+
+  // Partly cloudy (code 1-2)
+  if (code === 1 || code === 2) return (
+    <div className="wx-banner">
+      <svg viewBox="0 0 120 80" fill="none" xmlns="http://www.w3.org/2000/svg" width="120" height="80">
+        {/* Sun */}
+        <g className="wx-sun-core" style={{ transformOrigin: "38px 36px" }}>
+          <circle cx="38" cy="36" r="14" fill="#fde68a" />
+        </g>
+        <g className="wx-sun-rays" style={{ transformOrigin: "38px 36px" }}>
+          {[0,45,90,135,180,225,270,315].map((a, i) => {
+            const r = Math.PI * a / 180;
+            return <line key={i} x1={38 + 17*Math.cos(r)} y1={36 + 17*Math.sin(r)} x2={38 + 24*Math.cos(r)} y2={36 + 24*Math.sin(r)} stroke="#f59e0b" strokeWidth="2.5" strokeLinecap="round" />;
+          })}
+        </g>
+        <circle cx="38" cy="36" r="11" fill="#fbbf24" />
+        {/* Cloud in front */}
+        <g className="wx-cloud">
+          <ellipse cx="72" cy="38" rx="28" ry="16" fill="#e2e8f0" />
+          <ellipse cx="54" cy="42" rx="18" ry="13" fill="#f1f5f9" />
+          <ellipse cx="90" cy="42" rx="17" ry="12" fill="#e2e8f0" />
+        </g>
+      </svg>
+    </div>
+  );
+
+  // Clear sky (code === 0) — full sun
+  return (
+    <div className="wx-banner">
+      <svg viewBox="0 0 120 80" fill="none" xmlns="http://www.w3.org/2000/svg" width="120" height="80">
+        {/* Glow */}
+        <circle cx="60" cy="40" r="22" fill="rgba(253,230,138,0.22)" />
+        {/* Rotating rays */}
+        <g className="wx-sun-rays">
+          {[0,30,60,90,120,150,180,210,240,270,300,330].map((a, i) => {
+            const r = Math.PI * a / 180;
+            return <line key={i} x1={60 + 26*Math.cos(r)} y1={40 + 26*Math.sin(r)} x2={60 + 34*Math.cos(r)} y2={40 + 34*Math.sin(r)} stroke="#f59e0b" strokeWidth="2.5" strokeLinecap="round" />;
+          })}
+        </g>
+        {/* Core */}
+        <g className="wx-sun-core">
+          <circle cx="60" cy="40" r="18" fill="#fde68a" />
+          <circle cx="60" cy="40" r="13" fill="#fbbf24" />
+          <circle cx="56" cy="36" r="4" fill="#fde68a" opacity="0.6" />
+        </g>
+      </svg>
+    </div>
+  );
+}
+
 // ===== CURRENT WEATHER CARD =====
 function CurrentWeatherCard({ lat, lon }: { lat: number; lon: number }) {
   const { data, isLoading } = useQuery({
@@ -198,9 +427,9 @@ function CurrentWeatherCard({ lat, lon }: { lat: number; lon: number }) {
         </span>
       </div>
 
-      {/* Temperature */}
+      {/* Temperature + animated weather banner */}
       <div className="flex items-center gap-4 mb-5">
-        <span className="weather-emoji">{weatherEmoji}</span>
+        <WeatherBanner code={data.weatherCode} isNight={data.isNight} />
         <div>
           <div className="flex items-end gap-1">
             <span className="font-display font-black text-5xl leading-none">{data.temperature}°</span>
@@ -537,7 +766,9 @@ export default function Home() {
             <div className="relative max-w-2xl mx-auto" ref={dropdownRef}>
               <div className="flex gap-2">
                 <div className="relative flex-1">
-                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
+                    <GlobeIcon />
+                  </span>
                   <Input
                     ref={searchRef}
                     value={searchQuery}

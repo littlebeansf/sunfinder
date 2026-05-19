@@ -93,16 +93,33 @@ function generateCandidates(lat: number, lon: number, radiusKm = 200) {
 }
 
 async function reverseGeocode(lat: number, lon: number): Promise<{ name: string; region: string; country: string }> {
+  const pickName = (address: any): string | null => {
+    return address.city || address.town || address.village ||
+           address.municipality || address.suburb || address.hamlet ||
+           address.locality || address.county || null;
+  };
   try {
-    const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=10`;
-    const res = await fetch(url, { headers: { "User-Agent": "SunFinder/1.0" } });
-    const data = (await res.json()) as any;
-    const address = data.address || {};
-    const name =
-      address.city || address.town || address.village || address.municipality || address.county || "Unknown";
-    const region = address.state || address.county || "";
-    const country = address.country_code?.toUpperCase() || address.country || "";
-    return { name, region, country };
+    // First attempt: zoom=10 (city/town level)
+    const url1 = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=10`;
+    const res1 = await fetch(url1, { headers: { "User-Agent": "SunFinder/1.0" } });
+    const data1 = (await res1.json()) as any;
+    const address1 = data1.address || {};
+    const name1 = pickName(address1);
+    const region = address1.state || address1.county || "";
+    const country = address1.country_code?.toUpperCase() || address1.country || "";
+    if (name1) return { name: name1, region, country };
+
+    // Second attempt: zoom=8 (county / region level)
+    const url2 = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=8`;
+    const res2 = await fetch(url2, { headers: { "User-Agent": "SunFinder/1.0" } });
+    const data2 = (await res2.json()) as any;
+    const address2 = data2.address || {};
+    const name2 = address2.county || address2.state_district || address2.state || null;
+    const region2 = address2.state || address2.county || "";
+    const country2 = address2.country_code?.toUpperCase() || address2.country || "";
+    if (name2) return { name: name2, region: region2, country: country2 };
+
+    return { name: "Unknown", region: "", country: "" };
   } catch {
     return { name: "Unknown", region: "", country: "" };
   }
@@ -202,8 +219,12 @@ export async function registerRoutes(httpServer: Server, app: Express) {
           // Generate a short place description
           const desc = generateDescription(geo.name, weatherCode, temperature, cloudCover, sunnyScore);
 
+          // Never show directional label ("Far Northeast") — use coord-derived fallback instead
+          const spotName = (geo.name && geo.name !== "Unknown")
+            ? geo.name
+            : (geo.region || geo.country || `${candidate.lat.toFixed(1)}°N, ${candidate.lon.toFixed(1)}°E`);
           return {
-            name: geo.name !== "Unknown" ? geo.name : candidate.label,
+            name: spotName,
             region: geo.region,
             country: geo.country,
             lat: candidate.lat,

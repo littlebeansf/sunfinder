@@ -71,8 +71,12 @@ export async function reverseGeocode(lat: number, lon: number) {
       const res = await fetch(url);
       const data = await res.json() as any;
       const p = data.features?.[0]?.properties || {};
+      // Pick the most specific useful name available
+      const name = p.name || p.city || p.town || p.village ||
+                   p.municipality || p.suburb || p.county ||
+                   (p.state ? p.state : null) || "Unknown";
       return {
-        name: p.name || p.city || p.town || p.county || "Unknown",
+        name,
         region: p.state || p.county || "",
         country: (p.countrycode || "").toUpperCase(),
       };
@@ -183,7 +187,7 @@ export async function fetchSunnySpots(lat: number, lon: number, radiusKm = 200) 
     const sunnyScore = calcSunnyScore(weatherCode, cloudCover, precipitation);
     const geo = geoResults[i];
     return {
-      name: geo.name !== "Unknown" ? geo.name : `Spot ${i + 1}`,
+      name: (geo.name && geo.name !== "Unknown") ? geo.name : (geo.region || geo.country || `${candidate.lat.toFixed(1)}°N, ${candidate.lon.toFixed(1)}°E`),
       region: geo.region, country: geo.country,
       lat: candidate.lat, lon: candidate.lon,
       distanceKm: Math.round(haversineKm(lat, lon, candidate.lat, candidate.lon)),

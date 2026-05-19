@@ -376,13 +376,133 @@ h1, h2, h3, h4, h5, h6 {
   animation: scoreGrow 0.9s cubic-bezier(0.22,1,0.36,1) both;
 }
 
-/* ===== WEATHER ICON ===== */
-.weather-emoji {
-  font-size: 2.8rem;
-  line-height: 1;
+/* ===== WEATHER BANNER ANIMATIONS ===== */
+
+/* Sun glow pulse */
+@keyframes sunGlow {
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(251,191,36,0.55)) drop-shadow(0 0 24px rgba(245,158,11,0.25)); transform: scale(1); }
+  50%       { filter: drop-shadow(0 0 18px rgba(251,191,36,0.85)) drop-shadow(0 0 40px rgba(245,158,11,0.45)); transform: scale(1.04); }
+}
+/* Sun rays rotate */
+@keyframes sunRaysSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+/* Cloud float */
+@keyframes cloudFloat {
+  0%, 100% { transform: translateX(0); }
+  50%       { transform: translateX(5px); }
+}
+/* Rain drop fall */
+@keyframes rainFall {
+  0%   { transform: translateY(-8px); opacity: 0; }
+  20%  { opacity: 1; }
+  100% { transform: translateY(28px); opacity: 0; }
+}
+/* Snow float */
+@keyframes snowFall {
+  0%   { transform: translateY(-6px) rotate(0deg); opacity: 0; }
+  20%  { opacity: 0.9; }
+  100% { transform: translateY(26px) rotate(180deg); opacity: 0; }
+}
+/* Lightning flash */
+@keyframes lightningFlash {
+  0%, 90%, 100% { opacity: 0; }
+  92%, 96%      { opacity: 1; }
+  94%           { opacity: 0.4; }
+}
+/* Fog drift */
+@keyframes fogDrift {
+  0%, 100% { opacity: 0.5; transform: translateX(0); }
+  50%       { opacity: 0.9; transform: translateX(6px); }
+}
+/* Moon sway */
+@keyframes moonSway {
+  0%, 100% { transform: rotate(-8deg) scale(1); }
+  50%       { transform: rotate(8deg) scale(1.06); }
+}
+/* Star twinkle */
+@keyframes starTwinkle {
+  0%, 100% { opacity: 0.2; transform: scale(0.8); }
+  50%       { opacity: 1;   transform: scale(1.2); }
+}
+/* Wind wave */
+@keyframes windWave {
+  0%, 100% { d: path("M2 8 Q8 4 14 8 Q20 12 26 8"); }
+  50%       { d: path("M2 8 Q8 12 14 8 Q20 4 26 8"); }
+}
+
+/* Weather banner wrapper */
+.wx-banner {
+  position: relative;
+  width: 120px;
+  height: 80px;
+  flex-shrink: 0;
+}
+.wx-banner svg {
+  overflow: visible;
+}
+
+/* Sunny */
+.wx-sun-core   { animation: sunGlow 3s ease-in-out infinite; }
+.wx-sun-rays   { transform-origin: 60px 40px; animation: sunRaysSpin 14s linear infinite; }
+
+/* Cloud body */
+.wx-cloud      { animation: cloudFloat 5s ease-in-out infinite; }
+.wx-cloud-2    { animation: cloudFloat 5s 1.5s ease-in-out infinite; }
+
+/* Rain drops */
+.wx-rain-1 { animation: rainFall 1.1s 0.0s linear infinite; }
+.wx-rain-2 { animation: rainFall 1.1s 0.2s linear infinite; }
+.wx-rain-3 { animation: rainFall 1.1s 0.4s linear infinite; }
+.wx-rain-4 { animation: rainFall 1.1s 0.6s linear infinite; }
+.wx-rain-5 { animation: rainFall 1.1s 0.8s linear infinite; }
+
+/* Snow */
+.wx-snow-1 { animation: snowFall 1.8s 0.0s linear infinite; }
+.wx-snow-2 { animation: snowFall 1.8s 0.4s linear infinite; }
+.wx-snow-3 { animation: snowFall 1.8s 0.8s linear infinite; }
+.wx-snow-4 { animation: snowFall 1.8s 1.2s linear infinite; }
+
+/* Lightning */
+.wx-lightning { animation: lightningFlash 3s ease-in-out infinite; }
+
+/* Fog */
+.wx-fog-1 { animation: fogDrift 4s 0.0s ease-in-out infinite; }
+.wx-fog-2 { animation: fogDrift 4s 1.3s ease-in-out infinite; }
+.wx-fog-3 { animation: fogDrift 4s 2.6s ease-in-out infinite; }
+
+/* Moon + stars */
+.wx-moon  { animation: moonSway 6s ease-in-out infinite; transform-origin: 60px 40px; }
+.wx-star-1 { animation: starTwinkle 2.0s 0.0s ease-in-out infinite; }
+.wx-star-2 { animation: starTwinkle 2.0s 0.7s ease-in-out infinite; }
+.wx-star-3 { animation: starTwinkle 2.0s 1.4s ease-in-out infinite; }
+
+/* ===== GLOBE ICON IN SEARCH ===== */
+@keyframes globeSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes globePulse {
+  0%, 100% { opacity: 0.55; }
+  50%       { opacity: 0.85; }
+}
+.globe-icon {
+  width: 16px;
+  height: 16px;
   display: inline-block;
-  animation: sunPulse 4s ease-in-out infinite;
-  filter: drop-shadow(0 2px 6px rgba(245,158,11,0.3));
+  position: relative;
+  flex-shrink: 0;
+}
+.globe-sphere {
+  animation: globePulse 3s ease-in-out infinite;
+}
+.globe-meridian {
+  transform-origin: 8px 8px;
+  animation: globeSpin 8s linear infinite;
+}
+.globe-equator {
+  /* static, just the flat ring */
 }
 
 /* ===== SCROLLBAR ===== */
