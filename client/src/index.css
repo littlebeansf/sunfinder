@@ -1,0 +1,264 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ===== SUNFINDER DESIGN SYSTEM ===== */
+/* Palette: warm golden sky + deep blue night + clean whites */
+
+:root,
+[data-theme="light"] {
+  --background: 36 30% 97%;
+  --foreground: 30 25% 12%;
+  --card: 36 25% 99%;
+  --card-foreground: 30 25% 12%;
+  --popover: 36 25% 99%;
+  --popover-foreground: 30 25% 12%;
+  --primary: 38 95% 48%;
+  --primary-foreground: 30 25% 10%;
+  --secondary: 204 70% 40%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 36 15% 92%;
+  --muted-foreground: 30 10% 48%;
+  --accent: 204 70% 40%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 36 12% 88%;
+  --input: 36 12% 88%;
+  --ring: 38 95% 48%;
+  --radius: 0.75rem;
+  --chart-1: 38 95% 48%;
+  --chart-2: 204 70% 40%;
+  --chart-3: 142 60% 38%;
+  --chart-4: 20 80% 52%;
+  --chart-5: 270 55% 50%;
+
+  /* Custom tokens */
+  --color-sun: #f59e0b;
+  --color-sun-light: #fde68a;
+  --color-sky: #0ea5e9;
+  --color-sky-deep: #0369a1;
+  --color-cloud: #94a3b8;
+  --color-rain: #6b7280;
+  --font-display: 'Cabinet Grotesk', 'Plus Jakarta Sans', sans-serif;
+  --font-body: 'Plus Jakarta Sans', 'Inter', sans-serif;
+}
+
+[data-theme="dark"] {
+  --background: 220 25% 9%;
+  --foreground: 36 15% 88%;
+  --card: 220 22% 12%;
+  --card-foreground: 36 15% 88%;
+  --popover: 220 22% 12%;
+  --popover-foreground: 36 15% 88%;
+  --primary: 38 90% 52%;
+  --primary-foreground: 30 25% 10%;
+  --secondary: 204 60% 45%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 220 18% 18%;
+  --muted-foreground: 220 8% 55%;
+  --accent: 204 60% 45%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 65% 52%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 220 15% 20%;
+  --input: 220 15% 20%;
+  --ring: 38 90% 52%;
+  --chart-1: 38 90% 52%;
+  --chart-2: 204 60% 45%;
+  --chart-3: 142 55% 45%;
+  --chart-4: 20 75% 55%;
+  --chart-5: 270 50% 55%;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --background: 220 25% 9%;
+    --foreground: 36 15% 88%;
+    --card: 220 22% 12%;
+    --card-foreground: 36 15% 88%;
+    --popover: 220 22% 12%;
+    --popover-foreground: 36 15% 88%;
+    --primary: 38 90% 52%;
+    --primary-foreground: 30 25% 10%;
+    --secondary: 204 60% 45%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 220 18% 18%;
+    --muted-foreground: 220 8% 55%;
+    --accent: 204 60% 45%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 65% 52%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 220 15% 20%;
+    --input: 220 15% 20%;
+    --ring: 38 90% 52%;
+  }
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100dvh;
+  font-family: var(--font-body);
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  text-wrap: balance;
+  line-height: 1.2;
+}
+
+/* ===== LEAFLET OVERRIDES ===== */
+.leaflet-container {
+  font-family: var(--font-body) !important;
+  border-radius: var(--radius);
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 12px !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.15) !important;
+}
+
+.leaflet-popup-content {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.leaflet-popup-tip-container {
+  margin-top: -1px;
+}
+
+/* ===== CUSTOM ANIMATIONS ===== */
+@keyframes sunPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.05); opacity: 0.9; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(12px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-sun-pulse { animation: sunPulse 3s ease-in-out infinite; }
+.animate-slide-up { animation: slideUp 0.3s ease-out forwards; }
+.animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+.animate-spin-slow { animation: spin 8s linear infinite; }
+
+.skeleton {
+  background: linear-gradient(90deg, hsl(var(--muted)) 25%, hsl(var(--muted-foreground) / 0.1) 50%, hsl(var(--muted)) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* ===== SCORE COLORS ===== */
+.score-excellent { color: #16a34a; }
+.score-good { color: #65a30d; }
+.score-fair { color: #ca8a04; }
+.score-poor { color: #ea580c; }
+.score-bad { color: #dc2626; }
+
+.score-bg-excellent { background-color: #dcfce7; color: #15803d; }
+.score-bg-good { background-color: #f7fee7; color: #4d7c0f; }
+.score-bg-fair { background-color: #fefce8; color: #a16207; }
+.score-bg-poor { background-color: #fff7ed; color: #c2410c; }
+.score-bg-bad { background-color: #fef2f2; color: #b91c1c; }
+
+[data-theme="dark"] .score-bg-excellent { background-color: #14532d; color: #86efac; }
+[data-theme="dark"] .score-bg-good { background-color: #1a2e05; color: #bef264; }
+[data-theme="dark"] .score-bg-fair { background-color: #1c1400; color: #fde047; }
+[data-theme="dark"] .score-bg-poor { background-color: #2c1400; color: #fb923c; }
+[data-theme="dark"] .score-bg-bad { background-color: #2d0c0c; color: #fca5a5; }
+
+/* ===== SPOT CARD ===== */
+.spot-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+}
+.spot-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+}
+.spot-card.active {
+  ring: 2px solid hsl(var(--primary));
+  box-shadow: 0 0 0 2px hsl(var(--primary));
+}
+
+/* ===== CUSTOM MAP MARKERS ===== */
+.sun-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2.5px solid white;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  font-size: 18px;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+.sun-marker:hover { transform: scale(1.15); }
+
+/* ===== SEARCH DROPDOWN ===== */
+.search-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  border-radius: 0 0 12px 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+}
+
+/* ===== GLASS PANEL ===== */
+.glass {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background: hsl(var(--card) / 0.85);
+}
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: hsl(var(--muted)); }
+::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 99px; }
+
+/* ===== FOCUS ===== */
+:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
