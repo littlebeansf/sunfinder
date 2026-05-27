@@ -782,6 +782,15 @@ h1, h2, h3, h4, h5, h6 {
 /* ===== TOAST in dark mode ===== */
 [data-theme="dark"] [data-radix-toast-viewport] { filter: brightness(0.95); }
 
+/* ===== RADIUS CIRCLE LOADING ===== */
+@keyframes radiusCirclePulse {
+  0%, 100% { opacity: 0.55; stroke-dashoffset: 0; }
+  50%       { opacity: 1;    stroke-dashoffset: -28; }
+}
+.radius-circle-loading {
+  animation: radiusCirclePulse 1.4s ease-in-out infinite;
+}
+
 /* ===== NIGHT SCREEN ===== */
 @keyframes nightStarBlink {
   0%,100% { opacity: 0.15; transform: scale(0.8); }

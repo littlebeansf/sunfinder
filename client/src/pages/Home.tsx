@@ -914,6 +914,8 @@ export default function Home() {
   const markerRefs = useRef<Record<number, L.Marker>>({});
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [radiusKm, setRadiusKm] = useState(200);
+  // pendingRadius tracks the slider visually during drag; radiusKm triggers the query
+  const [pendingRadius, setPendingRadius] = useState(200);
   const [showRadiusSlider, setShowRadiusSlider] = useState(false);
 
   // localStorage state for static mode
@@ -1178,13 +1180,14 @@ export default function Home() {
                       <SlidersHorizontal className="w-3 h-3" /> Search radius
                     </span>
                     <span className="text-xs font-bold tabular-nums" style={{ color: "hsl(var(--primary))" }}>
-                      {radiusKm} km
+                      {pendingRadius} km
                     </span>
                   </div>
                   <Slider
                     min={50} max={500} step={25}
-                    value={[radiusKm]}
-                    onValueChange={([v]) => setRadiusKm(v)}
+                    value={[pendingRadius]}
+                    onValueChange={([v]) => setPendingRadius(v)}
+                    onValueCommit={([v]) => { setPendingRadius(v); setRadiusKm(v); }}
                     className="w-full"
                     data-testid="slider-radius"
                   />
@@ -1192,6 +1195,16 @@ export default function Home() {
                     <span>50 km</span>
                     <span>500 km</span>
                   </div>
+                  {pendingRadius !== radiusKm && (
+                    <button
+                      onClick={() => setRadiusKm(pendingRadius)}
+                      className="mt-2 w-full h-8 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all animate-slide-up"
+                      style={{ background: "hsl(var(--primary))", color: "hsl(var(--primary-foreground))" }}
+                      data-testid="button-apply-radius"
+                    >
+                      <RefreshCw className="w-3 h-3" /> Apply {pendingRadius} km
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -1407,7 +1420,10 @@ export default function Home() {
                   <Circle
                     center={[coords.lat, coords.lon]}
                     radius={radiusKm * 1000}
-                    pathOptions={{ color: "#f59e0b", fillColor: "#f59e0b", fillOpacity: 0.04, weight: 1.5, dashArray: "6 4" }}
+                    pathOptions={spotsLoading
+                      ? { color: "#f59e0b", fillColor: "#f59e0b", fillOpacity: 0.12, weight: 2.5, dashArray: "10 4", dashOffset: "0", className: "radius-circle-loading" }
+                      : { color: "#f59e0b", fillColor: "#f59e0b", fillOpacity: 0.04, weight: 1.5, dashArray: "6 4" }
+                    }
                   />
 
                   {spots?.map((spot, i) => (
